@@ -1,4 +1,4 @@
-from typing import Any
+﻿from typing import Any
 """Local, read-only MCP tools for the Automotive Assembly Lab PostgreSQL database.
 
 Place in automotive-assembly-lab/automotive-assembly-lab beside docker-compose.yml.
@@ -19,7 +19,7 @@ SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{1,100}$")
 def read_sql(sql: str) -> list[dict[str, Any]]:
     # psql emits JSON, making structured tool outputs easy to consume.
     import json
-    cmd = ["docker", "compose", "exec", "-T", "postgres", "psql",
+    cmd = ["docker", "exec", "-i", "automotive-assembly-lab-postgres-1", "psql",
            "-U", "factory", "-d", "manufacturing", "-t", "-A", "-c",
            "SELECT COALESCE(json_agg(t),'[]'::json) FROM (" + sql + ") t"]
     result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=30)
@@ -66,3 +66,5 @@ def trace_serial(serial_number: str) -> list[dict[str, Any]]:
 
 if __name__ == "__main__":
     mcp.run()  # local stdio; no network endpoint or write tools
+
+
