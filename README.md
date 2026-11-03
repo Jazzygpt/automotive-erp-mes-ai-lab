@@ -1,4 +1,4 @@
-# Automotive Assembly | ERPâ€“MESâ€“AI Integration Lab
+# Automotive Assembly | ERP-MES-AI Integration Lab
 
 An industrial digitalisation portfolio project demonstrating integration between manufacturing ERP, shop-floor telemetry, an MES database and an AI assistant using the Model Context Protocol (MCP).
 
@@ -61,22 +61,22 @@ Product: AAL-BRACKET-001
 
 Example trace:
 
-Serial â†’ MES Batch â†’ Work Order â†’ ERPNext Stock Entry
+Serial -> MES Batch -> Work Order -> ERPNext Stock Entry
 
 AAL-BRACKET-001-000826
-â†’ MES-MFG-WO-2026-00003-826-835
-â†’ MFG-WO-2026-00003
-â†’ MAT-STE-2026-00004
+-> MES-MFG-WO-2026-00003-826-835
+-> MFG-WO-2026-00003
+-> MAT-STE-2026-00004
 
 This verifies traceability for the example serial, not automatic reconciliation of every MES production record.
 
 ## Repository Contents
 
-- `mcp-server/server.py` â€” MCP tools
-- `node-red/flows.json` â€” Node-RED flow export
-- `database/schema.sql` â€” PostgreSQL schema-only export
-- `docs/` â€” Architecture and operating documentation
-- `tests/` â€” Planned integration tests
+- `mcp-server/server.py` - MCP tools
+- `node-red/flows.json` - Node-RED flow export
+- `database/schema.sql` - PostgreSQL schema-only export
+- `docs/` - Architecture and operating documentation
+- `tests/` - Planned integration tests
 
 ## Known Limitations
 
