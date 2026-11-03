@@ -1,103 +1,155 @@
-# Automotive Assembly | ERP-MES-AI Integration Lab
+﻿# Automotive Manufacturing Intelligence
+### ERP | MES | Industrial IoT | AI Integration
 
-An industrial digitalisation portfolio project demonstrating integration between manufacturing ERP, shop-floor telemetry, an MES database and an AI assistant using the Model Context Protocol (MCP).
+**An end-to-end automotive assembly systems integration prototype**
 
-## Architecture
+A manufacturing digitalisation project connecting shop-floor telemetry, manufacturing execution, ERP transactions and an AI-powered traceability assistant.
 
-```text
-ERPNext (Manufacturing ERP)
-          |
-          | REST API
-          v
-Node-RED (Integration & Automation)
-          ^
-          | MQTT
-          |
-Simulated Production Equipment
-          |
-          v
-PostgreSQL (MES Production & Traceability)
-          |
-          | FastMCP Python Server
-          v
-Claude Desktop (AI Manufacturing Assistant)
+Built to demonstrate practical industrial systems integration, production visibility and AI-assisted manufacturing analysis.
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    A["Automotive Assembly Simulation"]
+    B["MQTT Broker"]
+    C["Node-RED Integration"]
+    D["ERPNext - Manufacturing ERP"]
+    E["PostgreSQL - MES Database"]
+    F["Python FastMCP Server"]
+    G["Claude - AI Manufacturing Assistant"]
+
+    A --> B
+    B --> C
+    C <--> D
+    C --> E
+    E --> F
+    F <--> G
+
+    classDef machine fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
+    classDef integration fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
+    classDef data fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef ai fill:#fef3c7,stroke:#d97706,color:#78350f
+
+    class A,B machine
+    class C integration
+    class D,E data
+    class F,G ai
 ```
 
-The diagram is conceptual. ERPNext transactions, MQTT telemetry and MES persistence use distinct integration flows.
+Conceptual system architecture. Individual data flows and transaction boundaries are documented in the implementation.
+
+---
 
 ## Technology Stack
 
-- ERP: ERPNext v16
-- Integration: Node-RED
-- Telemetry: MQTT
-- MES: PostgreSQL
-- MCP server: Python, FastMCP
-- AI client: Claude Desktop
-- Infrastructure: Docker
-
-## Demonstrated Capabilities
-
-- Manufacturing work order retrieval
-- Shop-floor telemetry ingestion
-- MES production tracking
-- Manufacturing Stock Entry creation through ERPNext
-- Serial-to-batch-to-work-order traceability
-- ERPNext Stock Entry reference linkage
-- AI-assisted queries using MCP
-
-## MCP Tools
-
-| Tool | Purpose |
+| Layer | Technology |
 |---|---|
-| work_order_progress | Retrieve MES work order progress |
-| mes_batches | Retrieve batch quantities and ERP posting status |
-| trace_serial | Trace an individual serial to its production and ERP references |
+| Manufacturing ERP | ERPNext v16 |
+| Integration | Node-RED |
+| Industrial messaging | MQTT |
+| Manufacturing execution | PostgreSQL |
+| AI interoperability | Python FastMCP |
+| AI client | Claude Desktop |
+| Infrastructure | Docker |
+
+## Key Capabilities
+
+### 1. Manufacturing ERP Integration
+- Manufacturing work order retrieval
+- BOM-based manufacturing transactions
+- ERPNext manufacturing Stock Entry creation
+- Work order and stock transaction linkage
+
+### 2. Manufacturing Execution
+- Simulated shop-floor telemetry
+- Production quantity and rejection tracking
+- MES batch records
+- Work order production status
+
+### 3. Serial-Level Traceability
+- Serial number identification
+- MES batch linkage
+- Manufacturing work order reference
+- ERPNext Stock Entry reference
+
+### 4. AI Manufacturing Assistant
+Three verified MCP tools:
+
+| Tool | Function |
+|---|---|
+| `work_order_progress` | Retrieve MES production progress |
+| `mes_batches` | Retrieve MES batch and ERP posting details |
+| `trace_serial` | Trace serials to manufacturing and ERP references |
+
+---
 
 ## Verified Demonstration
 
-Work order: MFG-WO-2026-00003
+**Manufacturing Work Order:** `MFG-WO-2026-00003`
 
-Product: AAL-BRACKET-001
+**Product:** `AAL-BRACKET-001`
 
-Example trace:
+**Example serial:** `AAL-BRACKET-001-000826`
 
-Serial -> MES Batch -> Work Order -> ERPNext Stock Entry
+```text
+Serial: AAL-BRACKET-001-000826
+            |
+            v
+MES Batch: MES-MFG-WO-2026-00003-826-835
+            |
+            v
+Work Order: MFG-WO-2026-00003
+            |
+            v
+ERP Stock Entry: MAT-STE-2026-00004
+```
 
-AAL-BRACKET-001-000826
--> MES-MFG-WO-2026-00003-826-835
--> MFG-WO-2026-00003
--> MAT-STE-2026-00004
+The example traceability chain has been verified through the MCP interface.
 
-This verifies traceability for the example serial, not automatic reconciliation of every MES production record.
+---
 
-## Repository Contents
+## Engineering Challenges
 
-- `mcp-server/server.py` - MCP tools
-- `node-red/flows.json` - Node-RED flow export
-- `database/schema.sql` - PostgreSQL schema-only export
-- `docs/` - Architecture and operating documentation
-- `tests/` - Planned integration tests
+- Integration between ERP and shop-floor systems
+- Manufacturing data consistency
+- Serial and batch traceability
+- Reconciliation of machine and ERP quantities
+- AI access to structured operational data
 
-## Known Limitations
+## Current Status
 
-- Production telemetry is simulated.
-- MES production counts may exceed the ERP work order target.
-- Machine, MES and ERP quantities require reconciliation.
-- Automated duplicate prevention and production limits remain to be implemented.
-- Deployment instructions and automated tests are still being prepared.
+**Working prototype**
 
-## Security
+Verified:
+- ERPNext manufacturing transactions
+- MQTT and Node-RED telemetry integration
+- PostgreSQL MES reporting
+- Serial-to-ERP traceability
+- Three MCP tools accessible through Claude Desktop
 
-This repository must not contain credentials, API secrets,
-real database backups or private production records.
+Planned improvements:
+- Automated production quantity reconciliation
+- Production limit alerts
+- Expanded exception detection
+- Automated integration testing
+- Reproducible deployment documentation
 
-Use environment variables and local configuration files for
-development secrets.
+## Repository Structure
 
-## Project Status
+| Directory | Contents |
+|---|---|
+| `mcp-server/` | Python FastMCP implementation |
+| `node-red/` | Integration flows |
+| `database/` | PostgreSQL schema |
+| `docs/` | Architecture documentation (planned) |
+| `tests/` | Automated tests (planned) |
 
-Working prototype. MCP tool connectivity and an example
-serial-to-ERP trace have been verified.
+## Project Scope
 
-Not intended for production deployment without additional
-testing, security controls and operational safeguards.
+This is a simulated manufacturing environment intended for engineering demonstrations and portfolio development. It is not a production-certified MES or ERP integration.
+
+---
+**Independent Engineering Portfolio Project**
