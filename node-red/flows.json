@@ -1,0 +1,594 @@
+[
+    {
+        "id": "tab-automotive",
+        "type": "tab",
+        "label": "Automotive Assembly Lab",
+        "disabled": false,
+        "info": "Virtual sensors -> Modbus TCP -> Gateway -> MQTT -> Node-RED. Dashboard: /factory"
+    },
+    {
+        "id": "mqtt-in",
+        "type": "mqtt in",
+        "z": "tab-automotive",
+        "name": "Machine telemetry via MQTT",
+        "topic": "factory/automotive/assembly01/telemetry",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "7c0280a710424584",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 300,
+        "wires": [
+            [
+                "json-parse"
+            ]
+        ]
+    },
+    {
+        "id": "json-parse",
+        "type": "json",
+        "z": "tab-automotive",
+        "name": "Parse telemetry JSON",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 420,
+        "y": 300,
+        "wires": [
+            [
+                "cache-telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "cache-telemetry",
+        "type": "function",
+        "z": "tab-automotive",
+        "name": "Store latest machine state",
+        "func": "flow.set('latest', msg.payload);\nnode.status({fill:msg.payload.status === 'RUNNING' ? 'green':'yellow',shape:'dot',text:msg.payload.status+' / '+msg.payload.produced+' parts'});\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 610,
+        "y": 240,
+        "wires": [
+            [
+                "debug-telemetry",
+                "814b2ad075820aa7"
+            ]
+        ]
+    },
+    {
+        "id": "debug-telemetry",
+        "type": "debug",
+        "z": "tab-automotive",
+        "name": "Live telemetry",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 920,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "http-dashboard",
+        "type": "http in",
+        "z": "tab-automotive",
+        "name": "Dashboard page",
+        "url": "/factory",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 360,
+        "wires": [
+            [
+                "page-template"
+            ]
+        ]
+    },
+    {
+        "id": "page-template",
+        "type": "template",
+        "z": "tab-automotive",
+        "name": "Display dashboard HTML",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "plain",
+        "template": "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>Assembly-01 | Virtual Automotive Factory</title>\n<style>\n:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e9f0fa;background:#0b1120}\nbody{max-width:1120px;margin:0 auto;padding:28px 18px}h1{font-size:clamp(1.5rem,3vw,2.4rem);margin:0 0 8px}\n.subtitle{color:#aab9cf;margin:0 0 26px}.top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:center}\n.pill{border:1px solid #617085;background:#263549;padding:8px 15px;border-radius:40px;font-weight:bold}\n.ok{background:#124734;color:#bbf7d0;border-color:#247857}.fault{background:#621d2a;color:#fecaca;border-color:#b63753}.stop{background:#5b401a;color:#fde68a;border-color:#b5791e}\n.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:24px}\n.card{background:#182338;border:1px solid #2a3a55;border-radius:14px;padding:20px}\n.name{font-size:0.86rem;color:#aab9cf}.value{font-size:2.0rem;font-weight:750;margin:8px 0 2px;font-variant-numeric:tabular-nums}\n.unit{font-size:.95rem;color:#aab9cf;font-weight:450}.foot{margin-top:25px;color:#aab9cf;font-size:0.9rem;line-height:1.65}\ncode{background:#253149;padding:3px 6px;border-radius:5px}\n</style></head><body>\n<div class=\"top\"><div><h1>Automotive assembly cell</h1><p class=\"subtitle\">Factory lab / Machine ASSEMBLY-01 / Simulated telemetry</p></div><span id=\"status\" class=\"pill\">CONNECTING</span></div>\n<div class=\"grid\">\n<div class=\"card\"><div class=\"name\">Parts produced (total)</div><div id=\"produced\" class=\"value\">—</div></div>\n<div class=\"card\"><div class=\"name\">Good parts</div><div id=\"good_parts\" class=\"value\">—</div></div>\n<div class=\"card\"><div class=\"name\">Rejected parts</div><div id=\"rejected\" class=\"value\">—</div></div>\n<div class=\"card\"><div class=\"name\">Temperature</div><div class=\"value\"><span id=\"temperature_c\">—</span> <span class=\"unit\">°C</span></div></div>\n<div class=\"card\"><div class=\"name\">Cycle time (simulated)</div><div class=\"value\"><span id=\"cycle_time_s\">—</span> <span class=\"unit\">s</span></div></div>\n<div class=\"card\"><div class=\"name\">Vibration</div><div class=\"value\"><span id=\"vibration_mm_s\">—</span> <span class=\"unit\">mm/s</span></div></div>\n</div>\n<p class=\"foot\">Signal path: virtual sensors → virtual PLC (Modbus TCP) → Python gateway → MQTT broker → Node-RED → this dashboard.<br>\nLast sample: <span id=\"sample\">waiting for telemetry</span>. Refreshes every 2 seconds.<br>\nThis is a synthetic demo, not a safety-rated PLC, production MES or physical sensor installation. Open <code>http://localhost:1880</code> to inspect the Node-RED flows.</p>\n<script>\nasync function poll(){\n try{\n  const response=await fetch('/factory/api/latest',{cache:'no-store'});\n  if(!response.ok)throw new Error('No current data');\n  const data=await response.json();\n  for(const key of ['produced','good_parts','rejected','temperature_c','cycle_time_s','vibration_mm_s']){\n    document.getElementById(key).textContent=String(data[key] ?? '—');\n  }\n  const el=document.getElementById('status');\n  el.textContent=data.status || 'UNKNOWN';\n  el.className='pill '+(data.status==='RUNNING'?'ok':data.status==='FAULT'?'fault':'stop');\n  const ts=Date.parse(data.timestamp), age=Date.now()-ts;\n  document.getElementById('sample').textContent=isNaN(ts)?data.timestamp:new Date(ts).toLocaleString() + (age > 10000?' (stale)':'');\n }catch(error){document.getElementById('status').textContent='NO DATA';document.getElementById('status').className='pill fault';}\n}\npoll();setInterval(poll,2000);\n</script></body></html>",
+        "output": "str",
+        "x": 430,
+        "y": 360,
+        "wires": [
+            [
+                "page-headers"
+            ]
+        ]
+    },
+    {
+        "id": "page-headers",
+        "type": "function",
+        "z": "tab-automotive",
+        "name": "HTML response",
+        "func": "msg.headers = {'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}; return msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 360,
+        "wires": [
+            [
+                "http-dashboard-response"
+            ]
+        ]
+    },
+    {
+        "id": "http-dashboard-response",
+        "type": "http response",
+        "z": "tab-automotive",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 910,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "http-latest",
+        "type": "http in",
+        "z": "tab-automotive",
+        "name": "JSON telemetry API",
+        "url": "/factory/api/latest",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 400,
+        "wires": [
+            [
+                "latest-response"
+            ]
+        ]
+    },
+    {
+        "id": "latest-response",
+        "type": "function",
+        "z": "tab-automotive",
+        "name": "Return last MQTT sample",
+        "func": "const last = flow.get('latest');\nif (!last) {msg.statusCode=503;msg.payload={error:'Waiting for first MQTT message'};}\nelse {msg.payload=last;}\nmsg.headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 400,
+        "wires": [
+            [
+                "http-latest-response"
+            ]
+        ]
+    },
+    {
+        "id": "http-latest-response",
+        "type": "http response",
+        "z": "tab-automotive",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 750,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "814b2ad075820aa7",
+        "type": "function",
+        "z": "tab-automotive",
+        "name": "MES Production Order Tracking",
+        "func": "\nconst p = msg.payload;\n\nlet mes = flow.get(\"mes\") || {\n    work_order: \"WO-1001\",\n    product: \"Automotive Bracket\",\n    target: 1000,\n    good: 0,\n    rejected: 0,\n    lastProduced: Number(p.produced),\n    lastRejected: Number(p.rejected)\n};\n\nconst produced = Number(p.produced);\nconst rejected = Number(p.rejected);\n\nconst delta = produced >= mes.lastProduced\n    ? produced - mes.lastProduced : 0;\n\nconst rejectDelta = rejected >= mes.lastRejected\n    ? rejected - mes.lastRejected : 0;\n\nconst scrap = Math.min(delta, rejectDelta);\n\nmes.good += delta - scrap;\nmes.rejected += scrap;\n\nmes.lastProduced = produced;\nmes.lastRejected = rejected;\n\nmes.remaining = Math.max(0, mes.target - mes.good);\nmes.machine_status = p.status;\nmes.updated_at = p.timestamp;\n\nflow.set(\"mes\", mes);\n\nmsg.payload = mes;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 710,
+        "y": 300,
+        "wires": [
+            [
+                "e69d1244e92fa079"
+            ]
+        ]
+    },
+    {
+        "id": "e69d1244e92fa079",
+        "type": "debug",
+        "z": "tab-automotive",
+        "name": "MES Debug Output",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 950,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "5b70acd4b02b40c8",
+        "type": "http in",
+        "z": "tab-automotive",
+        "name": "MES Dashboard Page",
+        "url": "/mes",
+        "method": "get",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 180,
+        "y": 440,
+        "wires": [
+            [
+                "7ffc49e6bc3a85ae"
+            ]
+        ]
+    },
+    {
+        "id": "7ffc49e6bc3a85ae",
+        "type": "function",
+        "z": "tab-automotive",
+        "name": "function 1",
+        "func": "\nconst m = flow.get(\"mes\");\n\nif (!m) {\n    msg.statusCode = 503;\n    msg.payload = \"Waiting for MES production data\";\n    return msg;\n}\n\nconst good = Number(m.good) || 0;\nconst rejected = Number(m.rejected) || 0;\nconst target = Number(m.target) || 1000;\nconst progress = (good / target * 100).toFixed(1);\nconst quality = good + rejected > 0\n    ? (good / (good + rejected) * 100).toFixed(1)\n    : \"0.0\";\n\nmsg.headers = {\"Content-Type\": \"text/html\"};\n\nmsg.payload = `\n<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<meta http-equiv=\"refresh\" content=\"3\">\n<title>Automotive MES</title>\n<style>\nbody {\n  background:#0f172a;\n  color:white;\n  font-family:Arial,sans-serif;\n  padding:35px;\n}\nh1 { color:#38bdf8; }\n.grid { display:flex; flex-wrap:wrap; gap:15px; }\n.card {\n  background:#1e293b;\n  border-radius:12px;\n  padding:25px;\n  min-width:160px;\n}\n.value {font-size:35px;font-weight:bold;}\n.bar {background:#334155;border-radius:8px;overflow:hidden;}\n.fill {\n  background:#22c55e;\n  height:22px;\n  width:${Math.min(100,Number(progress))}%;\n}\n</style>\n</head>\n<body>\n<h1>Automotive Manufacturing MES</h1>\n<h2>Work Order: WO-1001</h2>\n<p>Product: Automotive Bracket</p>\n<p>Machine: ASSEMBLY-01</p>\n<div class=\"grid\">\n<div class=\"card\">Target<div class=\"value\">${target}</div></div>\n<div class=\"card\">Good Parts<div class=\"value\">${good}</div></div>\n<div class=\"card\">Rejected<div class=\"value\">${rejected}</div></div>\n<div class=\"card\">Remaining<div class=\"value\">${Math.max(0,target-good)}</div></div>\n<div class=\"card\">Quality Yield<div class=\"value\">${quality}%</div></div>\n<div class=\"card\">Machine<div class=\"value\">${m.machine_status || \"UNKNOWN\"}</div></div>\n</div>\n<h2>Production Progress: ${progress}%</h2>\n<div class=\"bar\"><div class=\"fill\"></div></div>\n<p>Live production data. Refreshes every 3 seconds.</p>\n</body>\n</html>`;\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 440,
+        "wires": [
+            [
+                "a791ab571ffc2f56"
+            ]
+        ]
+    },
+    {
+        "id": "a791ab571ffc2f56",
+        "type": "http response",
+        "z": "tab-automotive",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 590,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "46f86b25b7afb949",
+        "type": "inject",
+        "z": "tab-automotive",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 120,
+        "y": 40,
+        "wires": [
+            [
+                "a4a28a3217ae79de"
+            ]
+        ]
+    },
+    {
+        "id": "a4a28a3217ae79de",
+        "type": "http request",
+        "z": "tab-automotive",
+        "name": "ERPNext - Get Work Order",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://host.docker.internal:8080/api/resource/Work%20Order/MFG-WO-2026-00003",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "basic",
+        "senderr": false,
+        "headers": [],
+        "x": 400,
+        "y": 40,
+        "wires": [
+            [
+                "51744b631398809f"
+            ]
+        ]
+    },
+    {
+        "id": "0770877ed969e3f7",
+        "type": "debug",
+        "z": "tab-automotive",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 920,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "51744b631398809f",
+        "type": "function",
+        "z": "tab-automotive",
+        "name": "function 2",
+        "func": "\nconst wo = msg.payload?.data;\n\nif (msg.statusCode !== 200 || !wo) {\n    node.error(\"Invalid ERPNext response\", msg);\n    return null;\n}\n\nif (wo.company !== \"Zebline Systems Ltd\") {\n    node.error(\"Unexpected ERP company\", msg);\n    return null;\n}\n\nmsg.payload = {\n    erp_work_order_id: wo.name,\n    product_code: wo.production_item,\n    product_name: wo.item_name,\n    target_quantity: Number(wo.qty),\n    erp_produced_quantity: Number(wo.produced_qty),\n    erp_status: wo.status,\n    bom_number: wo.bom_no,\n    machine_id: \"ASSEMBLY-01\",\n    components: (wo.required_items || []).map(item => ({\n        item_code: item.item_code,\n        required_quantity: Number(item.required_qty),\n        transferred_quantity: Number(item.transferred_qty)\n    }))\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 40,
+        "wires": [
+            [
+                "0770877ed969e3f7"
+            ]
+        ]
+    },
+    {
+        "id": "165e9e53c3e87b16",
+        "type": "http request",
+        "z": "tab-automotive",
+        "name": "ERPNext - Prepare Manufacture",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://host.docker.internal:8080/api/method/erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry?work_order_id=MFG-WO-2026-00003&purpose=Manufacture&qty=10",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "basic",
+        "senderr": false,
+        "headers": [],
+        "x": 450,
+        "y": 80,
+        "wires": [
+            [
+                "8f34608c4985a910",
+                "15bd8fd89cfb3309"
+            ]
+        ]
+    },
+    {
+        "id": "a7b2a38bdda94517",
+        "type": "inject",
+        "z": "tab-automotive",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 100,
+        "y": 80,
+        "wires": [
+            [
+                "50159298c48d20d9"
+            ]
+        ]
+    },
+    {
+        "id": "50159298c48d20d9",
+        "type": "function",
+        "z": "tab-automotive",
+        "name": "function 3",
+        "func": "\nmsg.headers = {\n    ...msg.headers,\n    \"Content-Type\": \"application/json\"\n};\n\nmsg.payload = {\n    work_order_id: \"MFG-WO-2026-00003\",\n    purpose: \"Manufacture\",\n    qty: 10\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 240,
+        "y": 80,
+        "wires": [
+            [
+                "165e9e53c3e87b16"
+            ]
+        ]
+    },
+    {
+        "id": "144bb58ad1503811",
+        "type": "debug",
+        "z": "tab-automotive",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 960,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "15bd8fd89cfb3309",
+        "type": "function",
+        "z": "tab-automotive",
+        "name": "Validate ERP Manufacturing Entry",
+        "func": "const entry = msg.payload.message || msg.payload.data;\n\nif (!entry || entry.doctype !== \"Stock Entry\") {\n    node.error(\"Invalid Stock Entry response\", msg);\n    return null;\n}\n\nif (entry.stock_entry_type !== \"Manufacture\") {\n    node.error(\"Expected Manufacture Stock Entry\", msg);\n    return null;\n}\n\nif (entry.work_order !== \"MFG-WO-2026-00003\") {\n    node.error(\"Unexpected Work Order\", msg);\n    return null;\n}\n\nconst items = entry.items || [];\nconst expected = {\n    \"AAL-NUT-M8\": 20,\n    \"AAL-BLANK-001\": 10,\n    \"AAL-BOLT-M8\": 20,\n    \"AAL-BRACKET-001\": 10\n};\n\nif (items.length !== 4) {\n    node.error(\"Expected exactly four item rows\", msg);\n    return null;\n}\n\nfor (const [code, qty] of Object.entries(expected)) {\n    const matches = items.filter(i => i.item_code === code);\n    if (matches.length !== 1 ||\n        Number(matches[0].qty) !== qty) {\n        node.error(`Incorrect quantity for ${code}`, msg);\n        return null;\n    }\n}\n\nconst finished = items.find(\n    i => i.item_code === \"AAL-BRACKET-001\"\n);\n\nif (Number(finished.is_finished_item) !== 1 ||\n    finished.t_warehouse !== \"Finished Goods - ZSL\") {\n    node.error(\"Finished goods warehouse or flag incorrect\", msg);\n    return null;\n}\n\nif (Number(entry.docstatus) !== 0) {\n    node.error(\"Expected a draft Stock Entry\", msg);\n    return null;\n}\n\nnode.status({fill:\"green\",shape:\"dot\",text:\"Draft validated\"});\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 80,
+        "wires": [
+            [
+                "144bb58ad1503811",
+                "d86883c97109befd"
+            ]
+        ]
+    },
+    {
+        "id": "8f34608c4985a910",
+        "type": "debug",
+        "z": "tab-automotive",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 680,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "a0cfd5abfc229c9d",
+        "type": "http request",
+        "z": "tab-automotive",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://host.docker.internal:8080/api/resource/Stock%20Entry",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "basic",
+        "senderr": false,
+        "headers": [],
+        "x": 930,
+        "y": 180,
+        "wires": [
+            [
+                "520e08f2c7aabf64"
+            ]
+        ]
+    },
+    {
+        "id": "d86883c97109befd",
+        "type": "function",
+        "z": "tab-automotive",
+        "name": "function 4",
+        "func": "\nconst entry = msg.payload?.message ?? msg.payload?.data ?? msg.payload;\n\nif (!entry || !Array.isArray(entry.items)) {\n    node.error(\"Invalid Stock Entry\", msg);\n    return null;\n}\n\nmsg.payload = entry;\nmsg.headers = {\n    \"Content-Type\": \"application/json\"\n};\ndelete msg.url;\n\nreturn msg;\n\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 140,
+        "wires": [
+            [
+                "a0cfd5abfc229c9d"
+            ]
+        ]
+    },
+    {
+        "id": "520e08f2c7aabf64",
+        "type": "debug",
+        "z": "tab-automotive",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1020,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "7c0280a710424584",
+        "type": "mqtt-broker",
+        "name": "Factory MQTT Broker NEW",
+        "broker": "mosquitto",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
