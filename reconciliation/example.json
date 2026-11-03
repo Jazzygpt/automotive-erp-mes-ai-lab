@@ -1,0 +1,16 @@
+﻿{
+  "work_order": "MFG-WO-2026-00003",
+  "target_quantity": 1200,
+  "mes_good": 10945,
+  "mes_rejected": 592,
+  "machine_good": 17198,
+  "erp_manufactured_qty": 20,
+  "batches": [
+    {
+      "batch_id": "MES-MFG-WO-2026-00003-826-835",
+      "quantity": 10,
+      "status": "POSTED",
+      "erp_stock_entry": "MAT-STE-2026-00004"
+    }
+  ]
+}
