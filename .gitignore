@@ -17,3 +17,9 @@ reconciliation/live_snapshot.json
 reconciliation/live_report.json
 
 mcp-server/*.bak
+
+.env
+.env.*
+!.env.example
+
+reconciliation/root_cause_report.json
