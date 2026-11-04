@@ -64,6 +64,139 @@ def trace_serial(serial_number: str) -> list[dict[str, Any]]:
         FROM mes_unit_serials WHERE serial_number = '{serial}'""")
 
 
+@mcp.tool()
+def investigate_work_order(work_order_id: str) -> dict:
+    """Run a read-only, five-agent manufacturing investigation."""
+    import sys
+    from pathlib import Path
+
+    project_root = Path(__file__).resolve().parents[1]
+
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
+    from agents.orchestrator import Supervisor
+
+    progress = work_order_progress(work_order_id)
+    batches = mes_batches(work_order_id)
+
+    if len(progress) != 1:
+        return {
+            "error": "Expected one MES work order",
+            "rows": len(progress)
+        }
+
+    p = progress[0]
+
+    data = {
+        "work_order": work_order_id,
+        "target_quantity": p["target_quantity"],
+        "mes_good": p["good_quantity"],
+        "mes_rejected": p["rejected_quantity"],
+        "machine_good": p.get("last_machine_good"),
+        "erp_manufactured_qty": None,
+        "batches": [
+            {
+                "batch_id": b["batch_id"],
+                "quantity": b["quantity"],
+                "status": b["status"],
+                "erp_stock_entry": b.get("erp_stock_entry")
+            }
+            for b in batches
+        ]
+    }
+    
+    # Retrieve live ERPNext data using the existing adapter.
+    import json
+    import os
+    import subprocess
+
+    erp_script = project_root / "erpnext" / "read_work_order.py"
+
+    erp_result = subprocess.run(
+        [sys.executable, str(erp_script), work_order_id],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=os.environ.copy()
+    )
+
+    if erp_result.returncode == 0:
+        erp = json.loads(erp_result.stdout)
+
+        if (
+            erp.get("work_order") == work_order_id
+            and erp.get("produced_qty") is not None
+        ):
+            data["erp_manufactured_qty"] = erp["produced_qty"]
+    else:
+        raise RuntimeError(
+            "ERPNext read failed. Check MCP process environment "
+            "and ERPNext API connectivity."
+        )
+
+
+    report = Supervisor().run(data)
+
+    report["source"] = "LIVE_POSTGRESQL_MES"
+    report["erp_quantity_verified"] = False
+    report["execution_mode"] = "READ_ONLY"
+
+    return report
+
+
+
+@mcp.tool()
+def investigate_root_cause(work_order_id: str) -> dict:
+    """Run a read-only manufacturing root-cause investigation.
+
+    Returns evidence, possible causes, corrective actions
+    and a human-review governance decision.
+    """
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    project = Path(__file__).resolve().parents[1]
+
+    # Sprint 3 currently supports this validated work order.
+    if work_order_id != "MFG-WO-2026-00003":
+        return {
+            "error": "Work order not yet supported",
+            "requested_work_order": work_order_id
+        }
+
+    script = project / "agents" / "root_cause.py"
+
+    result = subprocess.run(
+        [sys.executable, str(script)],
+        cwd=str(project),
+        capture_output=True,
+        text=True,
+        timeout=120
+    )
+
+    if result.returncode != 0:
+        return {
+            "error": "Root-cause investigation failed",
+            "work_order": work_order_id
+        }
+
+    report_path = (
+        project / "reconciliation" / "root_cause_report.json"
+    )
+
+    report = json.loads(
+        report_path.read_text(encoding="utf-8-sig")
+    )
+
+    if report.get("work_order") != work_order_id:
+        raise ValueError("Investigation work order mismatch")
+
+    return report
+
+
 if __name__ == "__main__":
     mcp.run()  # local stdio; no network endpoint or write tools
 
