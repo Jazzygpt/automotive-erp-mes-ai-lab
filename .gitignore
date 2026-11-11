@@ -23,3 +23,5 @@ mcp-server/*.bak
 !.env.example
 
 reconciliation/root_cause_report.json
+
+reconciliation/posting_proposal.json

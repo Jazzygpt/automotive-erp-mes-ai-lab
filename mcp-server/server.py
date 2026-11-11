@@ -196,7 +196,27 @@ def investigate_root_cause(work_order_id: str) -> dict:
 
     return report
 
+@mcp.tool()
+def investigate_integrated_work_order(work_order_id: str) -> dict:
+    """Read-only live ERP/MES root-cause and transaction-level batch audit."""
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
 
+    repo = Path(__file__).resolve().parents[1]
+    script = repo / "agents" / "integrated_investigation.py"
+    result = subprocess.run(
+        [sys.executable, str(script), work_order_id],
+        cwd=str(repo), capture_output=True, text=True, timeout=240
+    )
+    if result.returncode != 0:
+        return {"error": "Integrated investigation failed; inspect local logs", "work_order": work_order_id}
+    report = json.loads((repo / "reconciliation" / "integrated_report.json").read_text(encoding="utf-8-sig"))
+    if report.get("work_order") != work_order_id:
+        raise ValueError("Work order mismatch")
+    return report
+    
 if __name__ == "__main__":
     mcp.run()  # local stdio; no network endpoint or write tools
 
