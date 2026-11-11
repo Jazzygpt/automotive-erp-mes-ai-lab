@@ -11,3 +11,17 @@ node_modules/
 *.tar
 *site_config_backup.json
 backups/
+
+reconciliation/live_snapshot.json
+
+reconciliation/live_report.json
+
+mcp-server/*.bak
+
+.env
+.env.*
+!.env.example
+
+reconciliation/root_cause_report.json
+
+reconciliation/posting_proposal.json
