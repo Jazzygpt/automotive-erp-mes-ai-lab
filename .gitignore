@@ -12,6 +12,7 @@ node_modules/
 *site_config_backup.json
 backups/
 
+Updated upstream
 reconciliation/live_snapshot.json
 
 reconciliation/live_report.json
@@ -25,3 +26,10 @@ mcp-server/*.bak
 reconciliation/root_cause_report.json
 
 reconciliation/posting_proposal.json
+
+README.backup.md
+
+*.bak
+
+reconciliation/*.json
+Stashed changes
